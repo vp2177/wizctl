@@ -1,15 +1,14 @@
-/** 
- * Node.js implementation.
- */
 import dg from 'node:dgram'
-import process from 'node:process'
+// TODO: typecheck
 
-const WIZ_PORT = 38899, _TIMEOUT = 1500 // Lower?
+export const WIZ_PORT = 38899
 
-function genericSend(ip = '', msg = {}, timeout = _TIMEOUT) {
-  const s = dg.createSocket({ type: 'udp4'}, (msg, rinfo) => {
-    console.info('← %s %s', rinfo.address, msg)
-  })
+function _logger(msg, rinfo) {
+  console.info('← %s: %s', rinfo.address, msg)
+}
+
+function _send(ip, msg, msgHandler = _logger, timeout = 1550) {
+  const s = dg.createSocket({ type: 'udp4' }, _logger)
   const m = JSON.stringify(msg)
   s.send(m, WIZ_PORT, ip, (err) => {
     err && console.error(err)
@@ -20,24 +19,27 @@ function genericSend(ip = '', msg = {}, timeout = _TIMEOUT) {
   return s
 }
 
-function switchOnOff(ip = '', state = true, id = 1) {
-  return genericSend(ip, {NotSending_id: id, method: 'setState', params: {state}})
+/** Switch device on/off. */
+export function setState(ip = '', state = true, id = 1) {
+  return _send(ip, {NotSending_id: id, method: 'setState', params: {state}})
   // TODO: send id?
 }
 
-function getStatus(ip = '') {
-  return genericSend(ip, {method: 'getPilot', NotSending_params: {}})
+/** Get device status */
+export function getPilot(ip = '') {
+  return _send(ip, {method: 'getPilot'})
 }
 
-function switchScene(ip = '', sceneId = 13, id = 1) {
-  return genericSend(ip, {method: 'setPilot', params: {sceneId, dimming: 100}}) // TODO: dimming support
+export function setPilot(ip = '', sceneId = 13, dimming = 100, id = 1) {
+  return _send(ip, {method: 'setPilot', params: {sceneId, dimming}}) 
 }
 
-function setRGB(ip = '', r = 0, g = 0, b = 255, id = 1) {
-  return genericSend(ip, {method: 'setPilot', params: {r, g, b, dimming: 100 }})
+export function setPilotRGB(ip = '', [r, g, b], dimming = 100, id = 1) {
+  return _send(ip, {method: 'setPilot', params: {r, g, b, dimming}})
 }
 
-const SCENE_PRESETS = {
+// TODO: hoist
+export const SCENE_PRESETS = {
   cozy: 6,
   warm: 11, 
   daylight: 12, // It's noisy?
@@ -58,29 +60,27 @@ const SCENE_PRESETS = {
   rhythm: 1000
 }
 
-// TODO: separate cli/module files
-function _main([cmd, a, b, ...r]) {
+export function wizctl([cmd, a, b, ...r]) {
   switch (cmd.toLowerCase()) {
     case 'off':
-      switchOnOff(a, false)
+      setState(a, false)
       break
     case 'on':
-      switchOnOff(a, true)
+      setState(a, true)
       break
     case 'state':
     case 'status':
-      getStatus(a)
+      getPilot(a)
       break
     case 'scene':
-      switchScene(b, SCENE_PRESETS[a.toLowerCase()])
+      setPilot(b, SCENE_PRESETS[a.toLowerCase()]) 
+      // TODO: dimming support
       break 
     case 'rgb':
-      const [red, green, blue] = a.split(',')
-      setRGB(b, red, green, blue)
+      const colors = a.split(/[,\/]/)
+      setPilotRGB(b, colors)
       break
     default:
-      console.info('?')
+      console.warn('?')
   }
 }
-
-_main(process.argv.slice(2))

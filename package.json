@@ -1,0 +1,11 @@
+{
+  "name": "wizctl",
+  "version": "0.0.0",
+  "homepage": "https://github.com/vp2177/wizctl",
+  "main": "./src/wiz.mjs",
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "5.x",
+    "@types/node": "*"
+  }
+}
