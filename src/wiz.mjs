@@ -1,5 +1,4 @@
 import dg from 'node:dgram'
-// TODO: typecheck
 
 export const WIZ_PORT = 38899
 
@@ -7,9 +6,12 @@ function _logger(msg, rinfo) {
   console.info('← %s: %s', rinfo.address, msg)
 }
 
-function _send(ip, msg, msgHandler = _logger, timeout = 1550) {
-  const s = dg.createSocket({ type: 'udp4' }, _logger)
-  const m = JSON.stringify(msg)
+/** 
+ * @param {string} ip
+ */
+function _send(ip, msg, msgHandler = _logger, timeout = 1500) {
+  const s = dg.createSocket({ type: 'udp4' }, msgHandler)
+  const m = (typeof msg == 'string')? msg : JSON.stringify(msg)
   s.send(m, WIZ_PORT, ip, (err) => {
     err && console.error(err)
   })
@@ -19,22 +21,35 @@ function _send(ip, msg, msgHandler = _logger, timeout = 1550) {
   return s
 }
 
-/** Switch device on/off. */
-export function setState(ip = '', state = true, id = 1) {
+/** 
+ * Switch device on/off.
+ * @param {string} ip 
+ */
+export function setState(ip, state = true, id = 1) {
   return _send(ip, {NotSending_id: id, method: 'setState', params: {state}})
   // TODO: send id?
 }
 
-/** Get device status */
-export function getPilot(ip = '') {
+/** 
+ * Get device status 
+ * @param {string} ip
+ */
+export function getPilot(ip) {
   return _send(ip, {method: 'getPilot'})
 }
 
-export function setPilot(ip = '', sceneId = 13, dimming = 100, id = 1) {
+/** 
+ * Set a scene.
+ * @param {string} ip
+ */
+export function setPilot(ip, sceneId = 13, dimming = 100, id = 1) {
   return _send(ip, {method: 'setPilot', params: {sceneId, dimming}}) 
 }
 
-export function setPilotRGB(ip = '', [r, g, b], dimming = 100, id = 1) {
+/** 
+ * @param {string} ip
+ */
+export function setPilotRGB(ip, [r, g, b], dimming = 100, id = 1) {
   return _send(ip, {method: 'setPilot', params: {r, g, b, dimming}})
 }
 
@@ -77,7 +92,7 @@ export function wizctl([cmd, a, b, ...r]) {
       // TODO: dimming support
       break 
     case 'rgb':
-      const colors = a.split(/[,\/]/)
+      const colors = a.split(/[,\/]/).map(x => Number.parseInt(x)) 
       setPilotRGB(b, colors)
       break
     default:
