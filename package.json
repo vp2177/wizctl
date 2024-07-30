@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "homepage": "https://github.com/vp2177/wizctl",
   "main": "./src/wiz.mjs",
+  "bin": "./src/node.mjs",
   "dependencies": {},
   "devDependencies": {
     "typescript": "5.x",

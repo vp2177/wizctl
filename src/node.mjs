@@ -1,4 +1,4 @@
-#! 
+#! /usr/bin/env node 
 
 import {wizctl} from './wiz.mjs'
 
