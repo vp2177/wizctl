@@ -2,19 +2,23 @@ import dg from 'node:dgram'
 
 export const WIZ_PORT = 38899
 
-function _logger(msg, rinfo) {
+function _msgLogger(msg, rinfo) {
   console.info('← %s: %s', rinfo.address, msg)
+}
+
+function _errLogger(err) {
+  if (err) {
+    console.error(err)
+  }
 }
 
 /** 
  * @param {string} ip
  */
-function _send(ip, msg, msgHandler = _logger, timeout = 1500) {
+function _send(ip, msg, msgHandler = _msgLogger, timeout = 1500) {
   const s = dg.createSocket({ type: 'udp4' }, msgHandler)
   const m = (typeof msg == 'string')? msg : JSON.stringify(msg)
-  s.send(m, WIZ_PORT, ip, (err) => {
-    err && console.error(err)
-  })
+  s.send(m, WIZ_PORT, ip, _errLogger)
   setTimeout(() => {
     s.close() 
   }, timeout)
@@ -92,8 +96,12 @@ export function wizctl([cmd, a, b, ...r]) {
       // TODO: dimming support
       break 
     case 'rgb':
+      // TODO: parse #hex
       const colors = a.split(/[,\/]/).map(x => Number.parseInt(x)) 
       setPilotRGB(b, colors)
+      break
+    case 'scenes':
+      console.log(Object.keys(SCENE_PRESETS))
       break
     default:
       console.warn('?')
